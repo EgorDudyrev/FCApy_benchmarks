@@ -5,6 +5,7 @@ import pandas as pd
 from itertools import product
 from datetime import datetime
 import matplotlib.pyplot as plt
+import seaborn as sns
 import multiprocessing, multiprocessing.sharedctypes
 from tqdm.notebook import tqdm
 
@@ -302,3 +303,69 @@ def compute_stats(
     stats_df = pd.read_csv(tmp_stats_fname, index_col=0)
     os.system(f"rm {tmp_stats_fname}")
     return stats_df
+
+
+#############################
+#      Save statistics      #
+#############################
+def save_context_stats(
+        stats_df: pd.DataFrame, context_stat_feats: Tuple[str, ...],
+        fname: str = 'context_statistics.csv'
+):
+    context_stat_df = stats_df[['ctx_name',]+context_stat_feats].drop_duplicates().reset_index(drop=True)
+    context_stat_df.to_csv(fname)
+
+
+def save_lattice_time_plot(
+        fname: str, context_stat_feats: Tuple[str, ...], stats_df: pd.DataFrame,
+        timeout_secs: float,
+        figsize: Tuple[int, int] = (10, 10), width: int = 2
+):
+    plt.rcParams['figure.facecolor'] = (1, 1, 1, 1)  # (1,1,1,0)
+    y_feat = 'lattice_construction_time (secs)'
+
+    plt.figure(figsize=figsize)
+    for idx, x_feat in enumerate(context_stat_feats):
+        plt.subplot(len(context_stat_feats) // width + 1, width, idx + 1)
+        sns.lineplot(x=x_feat, y=y_feat, hue='lib_name', data=stats_df)
+        plt.xlabel('')
+        plt.ylabel('')
+        plt.title(x_feat)
+        plt.xlabel(x_feat)
+        plt.ylabel('time (secs)')
+        plt.axhline(timeout_secs, linestyle='--', color='grey')  # label='maximal time per run')
+        plt.text(plt.xlim()[1] * 0.6, timeout_secs * 1.05, 'maximal time per run')
+        plt.ylim(-1, timeout_secs * 1.2)
+        plt.legend()
+
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.9)
+    plt.suptitle(f"{y_feat} based on context statistics\n(for classic fca contexts)")
+    plt.savefig(fname, pad_inches=0.1, bbox_inches='tight')
+    plt.close()
+
+
+def save_extent_intent_time_plot(
+        fname: str, context_stat_feats: Tuple[str, ...], stats_df: pd.DataFrame,
+        figsize: Tuple[int, int] = (10, 7), width: int = 2
+):
+    plt.rcParams['figure.facecolor'] = (1, 1, 1, 1)  # (1,1,1,0)
+    y_feat = 'intent+extent_time (secs)'
+
+    stats_df[y_feat] = stats_df[['intent_time (secs)', 'extent_time (secs)']].sum(1)
+
+    plt.figure(figsize=figsize)
+    for idx, x_feat in enumerate(context_stat_feats):
+        plt.subplot(len(context_stat_feats) // width + 1, width, idx + 1)
+        sns.lineplot(x=stats_df[x_feat], y=stats_df[y_feat] * 1e6, hue=stats_df['lib_name'])
+        plt.xlabel('')
+        plt.ylabel('')
+        plt.title(x_feat)
+        plt.xlabel(x_feat)
+        plt.ylabel(r'time (microseconds)')
+        plt.legend()
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.9)
+    plt.suptitle(f"{y_feat} based on context statistics\n(for random and classic contexts)")
+    plt.savefig(fname, pad_inches=0.1, bbox_inches='tight')
+    plt.close()
