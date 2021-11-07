@@ -3,13 +3,20 @@ import os
 import numpy as np
 import pandas as pd
 from itertools import product
+from datetime import datetime
+import matplotlib.pyplot as plt
 
 from fcapy import LIB_INSTALLED
 from fcapy.context import FormalContext
 from fcapy.lattice import ConceptLattice
 from fcapy.visualizer import ConceptLatticeVisualizer
 
+import concepts
 
+
+#######################
+#      Load Data      #
+#######################
 def load_classic_context(contexts_to_test: Tuple[str], tmp_dirname: str = 'tmp_contexts') -> Dict[str, pd.DataFrame]:
     try:
         os.system(f"rm -rf {tmp_dirname}")
@@ -59,3 +66,39 @@ def generate_random_contexts(
         df.name = f"random_{n_objects}_{n_attributes}_{density}"
         frames[df.name] = df
     return frames
+
+
+############################
+#      Visualize Data      #
+############################
+def visualize_by_concepts(K_names: Tuple[str], frames: Dict[str, pd.DataFrame], fname_out_prefix: str):
+    for K_name in K_names:
+        df = frames[K_name]
+        print(K_name)
+        t1 = datetime.now()
+        K = concepts.Context(df.index, df.columns, df.values)
+        L = K.lattice
+        print(f'Lattice constructed in {(datetime.now() - t1).total_seconds()} seconds')
+        L.graphviz(f'{fname_out_prefix}_{K_name}', render=True)
+        t2 = datetime.now()
+        dt = (t2 - t1).total_seconds()
+        print(f"Executed in {dt} seconds")
+
+
+def visualize_by_fcapy(K_names: Tuple[str], frames: Dict[str, pd.DataFrame], fname_out_prefix: str):
+    for K_name in K_names:
+        df = frames[K_name]
+        print(K_name)
+
+        t1 = datetime.now()
+        K = FormalContext.from_pandas(df)
+        L = ConceptLattice.from_context(K)
+        print(f'Lattice constructed in {(datetime.now() - t1).total_seconds()} seconds')
+        vsl = ConceptLatticeVisualizer(L)
+        print(f'Visualizer constructed in {(datetime.now() - t1).total_seconds()} seconds')
+
+        plt.title('Networkx lattice')
+        vsl.draw_networkx()
+        plt.savefig(f'{fname_out_prefix}_{K_name}.png')
+        plt.close()
+        print(f'Png saved in {(datetime.now() - t1).total_seconds()} seconds')
