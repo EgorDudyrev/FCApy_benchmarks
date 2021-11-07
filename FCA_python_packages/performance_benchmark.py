@@ -1,6 +1,8 @@
 from typing import Tuple, Dict
 import os
+import numpy as np
 import pandas as pd
+from itertools import product
 
 from fcapy import LIB_INSTALLED
 from fcapy.context import FormalContext
@@ -37,3 +39,23 @@ def load_bob_ross_dataframe(K_name: str = 'bob_ross') -> pd.DataFrame:
     df.name = K_name
     os.remove(fname)
     return df
+
+
+def generate_random_contexts(
+        n_objects_vars: Tuple[int], n_attributes_vars: Tuple[int], densities_vars: Tuple[float],
+        random_state: int = 42
+) -> Dict[str, pd.DataFrame]:
+    np.random.seed(random_state)
+
+    frames = {}
+    for comb in product(n_objects_vars, n_attributes_vars, densities_vars):
+        n_objects, n_attributes, density = comb
+
+        df = pd.DataFrame(np.random.binomial(1, density, size=(n_objects, n_attributes), ))
+        df.columns = [f"m_{i}" for i in df.columns]
+        df.index = [f"g_{i}" for i in df.index]
+        df = df.astype(bool)
+
+        df.name = f"random_{n_objects}_{n_attributes}_{density}"
+        frames[df.name] = df
+    return frames
