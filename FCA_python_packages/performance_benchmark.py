@@ -25,3 +25,15 @@ def load_classic_context(contexts_to_test: Tuple[str], tmp_dirname: str = 'tmp_c
 
     os.system(f"rm -rf {tmp_dirname}")
     return frames
+
+
+def load_bob_ross_dataframe(K_name: str = 'bob_ross') -> pd.DataFrame:
+    fname = f"{K_name}.csv"
+    link = "https://raw.githubusercontent.com/fivethirtyeight/data/master/bob-ross/elements-by-episode.csv"
+    os.system(f"wget -O {fname} -q {link}")
+    df = pd.read_csv(fname)
+    df['EPISODE_TITLE'] = df['EPISODE']+' '+df['TITLE']
+    df = df.drop(['EPISODE','TITLE'],1).set_index('EPISODE_TITLE').astype(bool)
+    df.name = K_name
+    os.remove(fname)
+    return df
