@@ -298,7 +298,7 @@ def compute_stats(
             stats_df.loc[row_idx, k] = v
         stats_df.loc[row_idx, 'is_computed'] = True
 
-        stats_df.to_csv('benchmark_stats_tmp.csv')
+        stats_df.to_csv(tmp_stats_fname)
 
     stats_df = pd.read_csv(tmp_stats_fname, index_col=0)
     os.system(f"rm {tmp_stats_fname}")
